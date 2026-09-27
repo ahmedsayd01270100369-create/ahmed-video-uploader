@@ -14,9 +14,11 @@ AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
 API_URL = "https://open.tiktokapis.com/v2"
 
+
 @app.get("/")
 def home():
     return render_template("index.html")
+
 
 @app.get("/oauth")
 def oauth():
@@ -30,6 +32,7 @@ def oauth():
         "state": state,
     }
     return redirect(AUTH_URL + "?" + urlencode(params))
+
 
 @app.get("/callback/")
 def callback():
@@ -52,36 +55,67 @@ def callback():
             ok=False,
         ), 400
 
-    response = requests.post(
-        TOKEN_URL,
-        data={
-            "client_key": CLIENT_KEY,
-            "client_secret": CLIENT_SECRET,
-            "code": code,
-            "grant_type": "authorization_code",
-            "redirect_uri": REDIRECT_URI,
-        },
-        timeout=30,
-    )
-
-    if not response.ok:
+    try:
+        response = requests.post(
+            TOKEN_URL,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Cache-Control": "no-cache",
+            },
+            data={
+                "client_key": CLIENT_KEY,
+                "client_secret": CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": REDIRECT_URI,
+            },
+            timeout=30,
+        )
+    except requests.RequestException:
         return render_template(
             "callback.html",
-            message="TikTok token exchange failed.",
+            message="Could not reach TikTok while exchanging the authorization code. Please try again.",
+            ok=False,
+        ), 502
+
+    try:
+        data = response.json()
+    except ValueError:
+        data = {}
+
+    if not response.ok or "access_token" not in data:
+        error_name = data.get("error")
+        error_description = data.get("error_description")
+        log_id = data.get("log_id")
+
+        if error_description:
+            message = f"TikTok authorization failed: {error_description}"
+        elif error_name:
+            message = f"TikTok authorization failed: {error_name}"
+        else:
+            message = "TikTok authorization failed while exchanging the authorization code."
+
+        if log_id:
+            message += f" Log ID: {log_id}"
+
+        return render_template(
+            "callback.html",
+            message=message,
             ok=False,
         ), 400
 
-    data = response.json()
     session["access_token"] = data["access_token"]
     session["refresh_token"] = data.get("refresh_token")
     session["open_id"] = data.get("open_id")
     return redirect("/?connected=1")
+
 
 def auth_headers():
     token = session.get("access_token")
     if not token:
         raise RuntimeError("Not connected")
     return {"Authorization": "Bearer " + token}
+
 
 @app.get("/api/session")
 def api_session():
@@ -106,6 +140,7 @@ def api_session():
         avatar_url=user.get("avatar_url"),
     )
 
+
 @app.post("/api/creator-info")
 def creator_info():
     try:
@@ -118,6 +153,7 @@ def creator_info():
                 {"Content-Type": "application/json"})
     except RuntimeError as exc:
         return jsonify(error=str(exc)), 401
+
 
 @app.post("/api/publish")
 def publish():
@@ -133,8 +169,6 @@ def publish():
     if size == 0:
         return jsonify(error="The selected video is empty."), 400
 
-    # TikTok Direct Post FILE_UPLOAD uses chunks. Keep the implementation
-    # simple and compatible with the existing uploader.
     max_chunk = 5 * 1024 * 1024
     chunk = min(size, max_chunk)
     total = (size + chunk - 1) // chunk
@@ -190,19 +224,23 @@ def publish():
         publish_id=result.get("publish_id"),
     )
 
+
 @app.post("/api/draft")
 def draft():
     return jsonify(
         error="Draft upload is not enabled in this build yet. Use Direct Post."
     ), 501
 
+
 @app.get("/terms.html")
 def terms():
     return "<h1>Terms of Service</h1><p>Users are responsible for content they submit.</p>"
 
+
 @app.get("/privacy.html")
 def privacy():
     return "<h1>Privacy Policy</h1><p>OAuth tokens are stored server-side.</p>"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
