@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ahmed Video Uploader</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="wrap">
+<header><b>● Ahmed Video Uploader</b></header>
+<section class="hero">
+<h1>Publish your videos to TikTok</h1>
+<p>Connect your TikTok account, choose a video, and publish it.</p>
+<a class="btn light" href="/oauth">Continue with TikTok</a>
+<small>Sign-in happens on TikTok's official authorization page.</small>
+</section>
+<section id="dash" class="card hidden">
+<div class="top">
+<div><small>CONNECTED ACCOUNT</small><h2 id="name">TikTok account</h2></div>
+<span class="ok">Connected</span>
+</div>
+<label>Video<input id="video" type="file" accept="video/*"></label>
+<label>Caption<textarea id="caption" maxlength="2200"></textarea></label>
+<label>Visibility<select id="privacy"></select></label>
+<div class="buttons">
+<button id="publish" class="btn red">Publish to TikTok</button>
+</div>
+<div id="status" class="status hidden"></div>
+</section>
+<footer><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a></footer>
+</main>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
