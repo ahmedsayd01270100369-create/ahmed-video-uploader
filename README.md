@@ -1,1 +1,1 @@
-# ahmed-video-uploader
+Server-side TikTok Web Demo. Never put the TikTok client secret or tokens in frontend JavaScript. Set FLASK_SECRET_KEY, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET and TIKTOK_REDIRECT_URI on the server.
