@@ -6,9 +6,21 @@ import requests
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-me")
 
-CLIENT_KEY = os.environ["TIKTOK_CLIENT_KEY"]
-CLIENT_SECRET = os.environ["TIKTOK_CLIENT_SECRET"]
-REDIRECT_URI = os.environ["TIKTOK_REDIRECT_URI"]
+def clean_env(name):
+    value = os.environ.get(name, "")
+    # Replit Secrets can sometimes contain accidental surrounding whitespace/quotes
+    return value.strip().strip('"').strip("'").strip()
+
+
+CLIENT_KEY = clean_env("TIKTOK_CLIENT_KEY")
+CLIENT_SECRET = clean_env("TIKTOK_CLIENT_SECRET")
+REDIRECT_URI = clean_env("TIKTOK_REDIRECT_URI")
+
+if not CLIENT_KEY or not CLIENT_SECRET or not REDIRECT_URI:
+    raise RuntimeError(
+        "Missing TikTok configuration. Set TIKTOK_CLIENT_KEY, "
+        "TIKTOK_CLIENT_SECRET and TIKTOK_REDIRECT_URI in Replit Secrets."
+    )
 
 AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
@@ -61,6 +73,7 @@ def callback():
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Cache-Control": "no-cache",
+                "Accept": "application/json",
             },
             data={
                 "client_key": CLIENT_KEY,
