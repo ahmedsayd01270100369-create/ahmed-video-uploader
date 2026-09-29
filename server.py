@@ -111,6 +111,14 @@ def callback():
         if log_id:
             message += f" Log ID: {log_id}"
 
+        # Diagnostic details that are safe to show: never expose the client secret.
+        key_hint = (CLIENT_KEY[-6:] if len(CLIENT_KEY) >= 6 else CLIENT_KEY)
+        message += (
+            f" HTTP status: {response.status_code}."
+            f" Client key length: {len(CLIENT_KEY)}, ending: ...{key_hint}."
+            f" Redirect URI: {REDIRECT_URI}"
+        )
+
         return render_template(
             "callback.html",
             message=message,
